@@ -1,6 +1,6 @@
 # Prostate Cancer Agent-Based Model (PhysiCell)
 
-Agent-based model of prostate tumor evolution under androgen deprivation therapy (ADT), simulating competition between PTEN-normal (androgen-sensitive, S) and PTEN-deleted (androgen-resistant, R) cells. Built using PhysiCell v1.14.0.
+Agent-based model of prostate tumor evolution under androgen deprivation therapy (ADT), simulating competition between PTEN-normal (androgen-sensitive, S) and PTEN-deleted (androgen-resistant, R) cells. Built using PhysiCell v1.14.0. (https://physicell.org/)
 
 ---
 
