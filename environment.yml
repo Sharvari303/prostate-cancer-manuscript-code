@@ -1,0 +1,50 @@
+# environment.yml
+# ─────────────────────────────────────────────────────────────────────────────
+# Conda environment for KM Survival Analysis Pipeline
+# Study: Prostate Cancer
+#
+# To create:
+#   conda env create -f environment.yml
+#
+# To activate:
+#   conda activate km_prostate
+#
+# To update after changes to this file:
+#   conda env update -f environment.yml --prune
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: km_prostate
+
+channels:
+  - conda-forge      # preferred — more up to date than defaults
+  - defaults
+
+dependencies:
+  # ── Python ──────────────────────────────────────────────────────────────
+  - python=3.12
+
+  # ── Core scientific stack ───────────────────────────────────────────────
+  - numpy>=1.26
+  - scipy>=1.11
+  - pandas>=2.0
+
+  # ── Plotting ────────────────────────────────────────────────────────────
+  - matplotlib>=3.7
+  - matplotlib-base>=3.7
+
+  # ── HTTP / API calls ────────────────────────────────────────────────────
+  - requests>=2.31
+  - urllib3>=2.0
+
+  # ── Utilities ───────────────────────────────────────────────────────────
+  - pip                  # needed for any pip-only packages below
+
+  # ── Optional but recommended ────────────────────────────────────────────
+  - jupyter              # for exploratory work / notebook versions
+  - ipython
+  - tqdm                 # progress bars (useful for long API fetches)
+
+  # ── pip-only packages (not available via conda-forge) ───────────────────
+  - pip:
+    - lifelines>=0.27    # if you want to cross-check KM results
+                         # against the custom scipy implementation
