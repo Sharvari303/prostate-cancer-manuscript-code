@@ -1,6 +1,6 @@
 # PCa Survival Analysis — KM Pipeline
 
-Kaplan-Meier and Cox Proportional Hazards survival analysis across prostate cancer cohorts sourced from cBioPortal. Analyzes genetic/intrinsic and extrinsic heterogeneity drivers: (1) molecular alterations, (2a) androgen uptake/synthesis, and (2b) adhesion/motility regulators.
+Kaplan-Meier and Cox Proportional Hazards survival analysis across prostate cancer cohorts sourced from cBioPortal. Analyzes genetic/intrinsic and extrinsic heterogeneity drivers: (1) molecular alterations, (2a) androgen uptake/synthesis, (2b) adhesion/motility regulators, and (3) crowding / mechanobiology axes.
 
 ---
 
