@@ -48,7 +48,16 @@ for d in [CACHE_DIR, TABLES_DIR, LOG_DIR,
           FIGURES_DIR / "task6_adhesion_mrna_individual",
           FIGURES_DIR / "task6b_adhesion_cna",
           FIGURES_DIR / "task7_adhesion_or",
-          FIGURES_DIR / "task_pfs_tcga"]:
+          FIGURES_DIR / "task_pfs_tcga",
+          # Crowding / mechanobiology axes (module8) — mRNA expression, TCGA-PRAD only
+          FIGURES_DIR / "task8_crowding_axis1",
+          FIGURES_DIR / "task8_crowding_axis2",
+          FIGURES_DIR / "task8_crowding_axis3",
+          FIGURES_DIR / "task8_crowding_axis4",
+          FIGURES_DIR / "task8_crowding_axis5",
+          FIGURES_DIR / "task8_crowding_axis6",
+          FIGURES_DIR / "task8_crowding_composite",
+          FIGURES_DIR / "task8_crowding_forest"]:
     d.mkdir(parents=True, exist_ok=True)
 
 
@@ -346,6 +355,40 @@ ENTREZ_IDS = {
     "RAF1":    5894,
     "CASP9":    842,
     "AKT1":     207,
+    # ─── CROWDING / MECHANOBIOLOGY AXES (mRNA expression; see CROWDING_AXES) ───
+    # Axis 1 — Hippo/YAP-TAZ
+    "YAP1":   10413,
+    "WWTR1":  25937,   # TAZ
+    "LATS1":   9113,
+    "LATS2":  26524,
+    # Axis 2 — mechanosensitive ion channels
+    "PIEZO1":  9780,
+    "TRPV4":  59341,
+    # Axis 3 — phosphoinositide kinases
+    "PIP4K2B": 8396,
+    "PIP5K1C":23396,
+    "PIK3CA":  5290,
+    # Axis 4 — cell cycle (CDKN1A 1026 already defined above — reused, not re-added)
+    "CDKN1B":  1027,   # p27
+    "CCND1":    595,   # Cyclin D1
+    "MKI67":   4288,   # Ki-67
+    # Axis 5 — hypoxia
+    "HIF1A":   3091,
+    "EPAS1":   2034,   # HIF2A
+    "VEGFA":   7422,
+    # Axis 6 — PIP2 / cytoskeletal mechanosensing (novel)
+    "ANXA1":    301,
+    "KPNA4":   3840,
+    "RAE1":    8480,
+    "PLS1":    5357,
+    "ZYX":     7791,
+    "ARF1":     375,
+    "CDC42":    998,
+    "EZR":     7430,
+    "LAMP2":   3920,
+    "HMOX1":   3162,
+    "FLNC":    2318,
+    "VAMP3":   9341,   # in PIP2 composite formula (not in brief per-gene table)
 }
 
 
@@ -773,6 +816,137 @@ ALL_CNA_GENES = (list(MOLECULAR_GENES.keys()) + ALL_INDIVIDUAL_GENES +
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# CROWDING / MECHANOBIOLOGY AXES (Axes 1–6)
+# Clinical anchor for the Fig 5 crowding result (PTEN-deleted clones proliferate
+# under physical crowding). Source: PI brief PCa_Crowding_6Axes_KM_Brief.pdf,
+# built from Nukpezah lab thesis Ch.3 (2025, "Nukpezah et al., in preparation").
+#
+# DESIGN (decided 2026-06-14):
+#   - ALL six axes are mRNA EXPRESSION (RNA-seq z-scores), NOT DNA/genetic calls.
+#     They route through module5_flag_expression, never module4.
+#   - The ONLY DNA variable is the PTEN stratifier: deep deletion (CNA == -2),
+#     column PTEN_DEEPDEL (NOT PTEN_ALT_STRICT, which folds in mutation/SV).
+#   - Cohort: TCGA-PRAD only. Endpoints: DFS primary + PFS secondary, NO OS
+#     (TCGA-PRAD has ~10/494 OS events = 2%, effectively event-free).
+#   - Stratified evidence = Cox gene_z * PTEN_DEEPDEL interaction term (all ~490
+#     pts); PTEN-stratified KM curves are descriptive only (flag arms < 20).
+#   - Dual-data genes CDKN1A/AR: crowding uses mRNA ONLY; their existing CNA
+#     analyses are untouched and coexist as distinct columns.
+#   - Splits: median default; quartile only for ANXA1 and the PIP2 composite.
+#   - FDR: Benjamini-Hochberg across Axis 6 genes, q < 0.10 (exploratory).
+#
+# direction:  high_is_bad | low_is_bad
+# pten_stratify: whether to fit the gene * PTEN_DEEPDEL interaction
+# ─────────────────────────────────────────────────────────────────────────────
+
+CROWDING_AXES = {
+    # ===== Axis 1 — Hippo/YAP-TAZ (contact inhibition master regulator) =====
+    "YAP1":    {"axis": 1, "data_type": "mRNA_expression", "direction": "high_is_bad",
+                "pten_stratify": True,  "split": "median",   "priority": "published",
+                "note": "Nuclear YAP overgrowth; AKT inhibits LATS under PTEN loss"},
+    "WWTR1":   {"axis": 1, "data_type": "mRNA_expression", "direction": "high_is_bad",
+                "pten_stratify": True,  "split": "median",   "priority": "published",
+                "note": "TAZ; YAP paralog, activated by PTEN loss"},
+    "LATS1":   {"axis": 1, "data_type": "mRNA_expression", "direction": "low_is_bad",
+                "pten_stratify": True,  "split": "median",   "priority": "published",
+                "note": "Low LATS1 = YAP constitutively active = proliferates through crowding"},
+    "LATS2":   {"axis": 1, "data_type": "mRNA_expression", "direction": "low_is_bad",
+                "pten_stratify": True,  "split": "median",   "priority": "published",
+                "note": "As LATS1; interaction with PTEN loss"},
+
+    # ===== Axis 2 — Mechanosensitive ion channels =====
+    "PIEZO1":  {"axis": 2, "data_type": "mRNA_expression", "direction": "high_is_bad",
+                "pten_stratify": True,  "split": "median",   "priority": "seminovel",
+                "note": "Compressive mechanosensor; novel in PCa (known in breast)"},
+    "TRPV4":   {"axis": 2, "data_type": "mRNA_expression", "direction": "high_is_bad",
+                "pten_stratify": True,  "split": "median",   "priority": "seminovel",
+                "note": "Activates PI3K/AKT->p27 bypass; amplified in PTEN loss"},
+
+    # ===== Axis 3 — Phosphoinositide kinases =====
+    "PIP4K2B": {"axis": 3, "data_type": "mRNA_expression", "direction": "high_is_bad",
+                "pten_stratify": True,  "split": "median",   "priority": "seminovel",
+                "note": "Mechanoresponsive PIP2 kinase; YAP nuclear retention"},
+    "PIP5K1C": {"axis": 3, "data_type": "mRNA_expression", "direction": "high_is_bad",
+                "pten_stratify": True,  "split": "median",   "priority": "seminovel",
+                "note": "Generates PIP2 substrate pool; max PIP2->PIP3 in PTEN loss"},
+    "PIK3CA":  {"axis": 3, "data_type": "mRNA_expression", "direction": "high_is_bad",
+                "pten_stratify": True,  "split": "median",   "priority": "context",
+                "note": "Known oncogene; PI3K-AKT context for crowding resistance"},
+
+    # ===== Axis 4 — Cell cycle arrest genes =====
+    "CDKN1B":  {"axis": 4, "data_type": "mRNA_expression", "direction": "low_is_bad",
+                "pten_stratify": True,  "split": "median",   "priority": "published",
+                "note": "p27; crowding arrest bypassed in PTEN-deleted"},
+    "CDKN1A":  {"axis": 4, "data_type": "mRNA_expression", "direction": "low_is_bad",
+                "pten_stratify": True,  "split": "median",   "priority": "published",
+                "note": "p21 (mRNA expression — distinct from molecular CNA CDKN1A)"},
+    "CCND1":   {"axis": 4, "data_type": "mRNA_expression", "direction": "high_is_bad",
+                "pten_stratify": True,  "split": "median",   "priority": "published",
+                "note": "Cyclin D1; maintained proliferation despite crowding"},
+    "MKI67":   {"axis": 4, "data_type": "mRNA_expression", "direction": "high_is_bad",
+                "pten_stratify": False, "split": "median",   "priority": "published",
+                "note": "Ki-67; proliferation phenotype confirmation, no PTEN strat"},
+
+    # ===== Axis 5 — Hypoxia =====
+    "HIF1A":   {"axis": 5, "data_type": "mRNA_expression", "direction": "high_is_bad",
+                "pten_stratify": True,  "split": "median",   "priority": "published",
+                "note": "Crowded-tumor hypoxia; PTEN loss prevents HIF1A arrest"},
+    "EPAS1":   {"axis": 5, "data_type": "mRNA_expression", "direction": "high_is_bad",
+                "pten_stratify": True,  "split": "median",   "priority": "published",
+                "note": "HIF2A; relevant to CRPC"},
+    "VEGFA":   {"axis": 5, "data_type": "mRNA_expression", "direction": "high_is_bad",
+                "pten_stratify": False, "split": "median",   "priority": "published",
+                "note": "Angiogenic output of crowding/hypoxia; no PTEN strat"},
+
+    # ===== Axis 6 — PIP2 / cytoskeletal mechanosensing (NOVEL — headline) =====
+    "ANXA1":   {"axis": 6, "data_type": "mRNA_expression", "direction": "high_is_bad",
+                "pten_stratify": True,  "split": "quartile", "priority": "highest",
+                "novel": True, "note": "Dominant PIP2 mechanotype predictor; NO PCa data"},
+    "KPNA4":   {"axis": 6, "data_type": "mRNA_expression", "direction": "high_is_bad",
+                "pten_stratify": True,  "split": "median",   "priority": "highest",
+                "novel": True, "note": "p=1.7e-7 HR=3.09 across cancers; imports crowding TFs"},
+    "RAE1":    {"axis": 6, "data_type": "mRNA_expression", "direction": "high_is_bad",
+                "pten_stratify": True,  "split": "median",   "priority": "highest",
+                "novel": True, "note": "p=2.6e-7 HR=3.25 across cancers; mRNA export"},
+    "PLS1":    {"axis": 6, "data_type": "mRNA_expression", "direction": "high_is_bad",
+                "pten_stratify": True,  "split": "median",   "priority": "high",
+                "novel": True, "note": "PIP2-dependent actin bundler"},
+    "ZYX":     {"axis": 6, "data_type": "mRNA_expression", "direction": "high_is_bad",
+                "pten_stratify": True,  "split": "median",   "priority": "high",
+                "novel": True, "note": "Focal adhesion force sensor"},
+    "ARF1":    {"axis": 6, "data_type": "mRNA_expression", "direction": "high_is_bad",
+                "pten_stratify": True,  "split": "median",   "priority": "high",
+                "novel": True, "note": "PIP2-Golgi coupling; mechanosensitive trafficking"},
+    "CDC42":   {"axis": 6, "data_type": "mRNA_expression", "direction": "high_is_bad",
+                "pten_stratify": True,  "split": "median",   "priority": "high",
+                "novel": True, "note": "PIP2-activated actin nucleation; maintained under crowding"},
+    "EZR":     {"axis": 6, "data_type": "mRNA_expression", "direction": "high_is_bad",
+                "pten_stratify": False, "split": "median",   "priority": "medium",
+                "novel": True, "note": "PIP2-activated membrane-cytoskeleton linker"},
+    "LAMP2":   {"axis": 6, "data_type": "mRNA_expression", "direction": "high_is_bad",
+                "pten_stratify": True,  "split": "median",   "priority": "medium",
+                "novel": True, "note": "Lysosomal survival under crowding+hypoxia (22RV1 Fig 3.12)"},
+    "HMOX1":   {"axis": 6, "data_type": "mRNA_expression", "direction": "high_is_bad",
+                "pten_stratify": True,  "split": "median",   "priority": "medium",
+                "novel": True, "note": "Oxidative stress defense; crowding->hypoxia->HMOX1 in CRPC"},
+    "FLNC":    {"axis": 6, "data_type": "mRNA_expression", "direction": "high_is_bad",
+                "pten_stratify": False, "split": "median",   "priority": "medium",
+                "novel": True, "note": "Actin cross-linker / force sensor"},
+}
+
+# Cohort and endpoint scope for crowding axes
+CROWDING_COHORT_KEY = "TCGA_PRAD"          # single cohort (n≈494)
+CROWDING_ENDPOINTS  = ["DFS", "PFS"]       # primary, secondary — NO OS (event-free)
+CROWDING_FDR_METHOD = "fdr_bh"             # Benjamini-Hochberg
+CROWDING_FDR_Q      = 0.10                 # exploratory discovery threshold
+
+# Convenience lists
+ALL_CROWDING_GENES = list(CROWDING_AXES.keys())
+CROWDING_AXIS6_GENES = [g for g, v in CROWDING_AXES.items() if v["axis"] == 6]
+CROWDING_GENES_PTEN_STRATIFIED = [g for g, v in CROWDING_AXES.items() if v["pten_stratify"]]
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # CNA THRESHOLDS
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -867,6 +1041,25 @@ COMPOSITE_SCORES = {
         "components":  ["ar_activity_score", "androgen_uptake_score", "adhesion_motility_score"],
         "direction":   "high_is_bad",
         "note":        "Composite of all three functional axes. Higher = more aggressive phenotype.",
+    },
+    "pip2_trafficking_score": {
+        "label":       "PIP2 Trafficking Score",
+        "description": "Mean z-score of ANXA1 + ARF1 + CDC42 + EZR + VAMP3. "
+                       "Nukpezah thesis PIP2 interactome signature (top 5). "
+                       "Dichotomized top vs bottom quartile. Higher = crowding-resistant "
+                       "PIP2-mediated mechanical adaptation. Axis 6 headline result.",
+        "genes":       ["ANXA1", "ARF1", "CDC42", "EZR", "VAMP3"],
+        "weights":     [1, 1, 1, 1, 1],   # equal weighting
+        "weighting_justification": (
+            "Equal weights for the top-5 PIP2 interactome proteins from the thesis "
+            "mutual-information feature selection. VAMP3 retained per composite formula "
+            "though absent from the brief's per-gene KM table."
+        ),
+        "split":       "quartile",        # top vs bottom quartile per brief
+        "direction":   "high_is_bad",
+        "pten_stratify": True,
+        "note":        "MOST NOVEL: no published study links PIP2 interactome expression "
+                       "to PCa survival. Tested with gene * PTEN_DEEPDEL interaction.",
     },
 }
 

@@ -27,6 +27,7 @@ from config import (
     ANDROGEN_GENES, ADHESION_MOTILITY_GENES,
     ADHESION_EPITHELIAL_GENES, ADHESION_MESENCHYMAL_GENES,
     AR_ACTIVITY_GENES,
+    CROWDING_AXES, COMPOSITE_SCORES,
     EXPRESSION_COHORT_KEYS,
     CACHE_DIR, DATASETS,
 )
@@ -34,7 +35,11 @@ from utils.logger import get_logger
 
 log = get_logger("module5_flag_expression")
 
-ALL_EXPR_GENES = {**AR_ACTIVITY_GENES, **ANDROGEN_GENES, **ADHESION_MOTILITY_GENES}
+# Crowding axes are mRNA expression — they get the same {GENE}_ZSCORE → {GENE}_GROUP_*
+# treatment as the other expression genes. CDKN1A appears here (mRNA) and also in the
+# molecular axis (CNA); the two live in distinct columns and never collide.
+ALL_EXPR_GENES = {**AR_ACTIVITY_GENES, **ANDROGEN_GENES, **ADHESION_MOTILITY_GENES,
+                  **CROWDING_AXES}
 
 SPLIT_NAMES = ["MEDIAN", "QUARTILE", "ZSCORE"]
 
@@ -192,6 +197,22 @@ def add_composite_scores(df):
     log.info(f"  ANDROGEN_SCORE: "
              f"valid={df['ANDROGEN_SCORE'].notna().sum()}, "
              f"mean={df['ANDROGEN_SCORE'].mean():.3f}")
+
+    # PIP2 trafficking composite (Axis 6 headline): mean z of ANXA1+ARF1+CDC42+EZR+VAMP3.
+    # Dichotomized top vs bottom quartile in module8 (middle 50% → NaN). Equal weights.
+    pip2_cfg  = COMPOSITE_SCORES["pip2_trafficking_score"]
+    pip2_cols = [f"{g}_ZSCORE" for g in pip2_cfg["genes"] if f"{g}_ZSCORE" in df.columns]
+    if pip2_cols:
+        df["PIP2_TRAFFICKING_SCORE"] = df[pip2_cols].mean(axis=1)
+        # Quartile group column (top=High, bottom=Low, middle 50%=NaN)
+        df["PIP2_TRAFFICKING_GROUP_QUARTILE"] = _split_quartile(df["PIP2_TRAFFICKING_SCORE"])
+        log.info(f"  PIP2_TRAFFICKING_SCORE: valid={df['PIP2_TRAFFICKING_SCORE'].notna().sum()} "
+                 f"(from {len(pip2_cols)}/{len(pip2_cfg['genes'])} genes), "
+                 f"mean={df['PIP2_TRAFFICKING_SCORE'].mean():.3f}")
+    else:
+        df["PIP2_TRAFFICKING_SCORE"] = np.nan
+        df["PIP2_TRAFFICKING_GROUP_QUARTILE"] = np.nan
+        log.warning("  PIP2_TRAFFICKING_SCORE: no component z-scores found — set NaN")
     return df
 
 
@@ -240,6 +261,12 @@ def flag_all(molecular_dfs=None, force_refresh=False):
         n_valid_mrna = df[[c for c in df.columns if '_ZSCORE' in c]].notna().any(axis=1).sum()
         log.info(f"\n{'='*55}\nExpression flagging: {label}  "
                  f"(n={len(df)}, with mRNA={n_valid_mrna})\n{'='*55}")
+
+        # PTEN_DEEPDEL (crowding stratifier) flows in from the molecular flagged frame.
+        # Warn loudly if absent — module4 must be re-run after adding it.
+        if "PTEN_DEEPDEL" not in df.columns:
+            log.warning("  PTEN_DEEPDEL missing — re-run module4_flag_molecular --refresh "
+                        "for crowding (module8) PTEN-stratified analysis.")
 
         df = add_expression_splits(df)
         df = add_or_combined_expression(df)

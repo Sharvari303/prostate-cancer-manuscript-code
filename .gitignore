@@ -133,4 +133,9 @@ job_details.dat
 KEY_OBSERVATIONS.md
 *.sh
 
+# Crowding Fig 12 panel builders (local, not part of pipeline)
+scripts/assemble_crowding_panel.py
+scripts/build_crowding_panel.py
+
 #output directories
+*.sh

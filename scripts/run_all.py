@@ -32,6 +32,7 @@ MODULE_ORDER = [
     "module5_flag_expression",
     "module6_comprehensive_km",
     "module7_cox_regression",
+    "module8_crowding",
 ]
 
 
@@ -112,6 +113,11 @@ def run_pipeline(start_from=None, only=None, force_refresh=False):
             elif "module7_cox_regression" in mod_name:
                 mod.main()
                 log.info("  Cox regression results table generated")
+
+            # ── Module 8: Crowding / mechanobiology axes (KM + Cox interaction) ─
+            elif "module8_crowding" in mod_name:
+                mod.main()
+                log.info("  Crowding axes KM + Cox interaction tables generated")
 
             elapsed = time.time() - t0
             log.info(f"✓ {mod_name} completed in {elapsed:.1f}s")

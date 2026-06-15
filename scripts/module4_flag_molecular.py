@@ -211,6 +211,33 @@ def add_adhesion_cna_flags(df):
     return df
 
 
+def add_pten_deepdel(df):
+    """PTEN deep-deletion stratifier for the crowding axes (module8).
+
+    PTEN_DEEPDEL = 1 if PTEN_CNA == -2 (homozygous/deep deletion), 0 if PTEN_CNA
+    is present and > -2, NaN if no CNA data. This is DELETION-ONLY by design and
+    is intentionally NARROWER than PTEN_ALT_STRICT (which also folds in truncating
+    mutations and SV). It exists solely as the gene * PTEN interaction stratifier
+    for the mRNA crowding analysis, matching the PI brief ("copy number -2 = deep
+    deletion"). It does NOT replace or modify PTEN_ALT_STRICT.
+    """
+    cna_col = "PTEN_CNA"
+    if cna_col not in df.columns:
+        log.warning("  PTEN_CNA not found — PTEN_DEEPDEL set to NaN")
+        df["PTEN_DEEPDEL"] = np.nan
+        return df
+    cna = pd.to_numeric(df[cna_col], errors="coerce")
+    deepdel = pd.Series(np.nan, index=df.index, dtype=float)
+    deepdel[cna.notna()] = 0.0
+    deepdel[cna == -2]   = 1.0
+    df["PTEN_DEEPDEL"] = deepdel
+    n_del = int((deepdel == 1).sum())
+    n_int = int((deepdel == 0).sum())
+    n_na  = int(deepdel.isna().sum())
+    log.info(f"  PTEN_DEEPDEL: deep-del={n_del}, intact={n_int}, no-data={n_na}")
+    return df
+
+
 def add_or_combined_flags(df):
     """
     Adds OR-combined alteration flags with strict missing data rule.
@@ -261,6 +288,7 @@ def flag_all(clean_dfs=None, force_refresh=False):
         df = add_individual_gene_flags(df)
         df = add_androgen_cna_flags(df)
         df = add_adhesion_cna_flags(df)
+        df = add_pten_deepdel(df)
         df = add_or_combined_flags(df)
 
         df.to_csv(out_path, index=False)

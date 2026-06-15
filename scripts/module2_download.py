@@ -28,6 +28,7 @@ from config import (
     DATASETS, ENTREZ_IDS,
     ALL_MOLECULAR_GENES, ALL_AR_ACTIVITY_GENES, ALL_EXPRESSION_GENES,
     ALL_INDIVIDUAL_GENES, ALL_ANDROGEN_CNA_GENES, ALL_ADHESION_CNA_GENES,
+    ALL_CROWDING_GENES,
     CACHE_DIR,
 )
 from utils.api_client import (
@@ -336,6 +337,22 @@ def download_dataset(dataset_key, force_refresh=False):
         adhesion_mut_available = False
         adhesion_profiled_patients = set()
 
+    # Step 14: mRNA z-scores for crowding / mechanobiology axes (Axes 1–6)
+    # Expression only; PTEN stratifier comes from CNA (already fetched in Step 2).
+    # Analyzed for TCGA-PRAD only (module8), but fetched wherever mRNA exists.
+    log.info(f"Step 14/14 — mRNA z-scores (crowding axes: {len(ALL_CROWDING_GENES)} genes)")
+    try:
+        mrna_crowding = fetch_mrna_data(
+            study_id,
+            entrez_ids=_entrez_for(ALL_CROWDING_GENES),
+            gene_names=ALL_CROWDING_GENES,
+            force_refresh=force_refresh,
+            cache_suffix="mrna_crowding",
+        )
+    except ValueError as e:
+        log.warning(f"  Crowding mRNA not available: {e}")
+        mrna_crowding = pd.DataFrame(columns=["patientId"])
+
     # Assemble master
     log.info("Assembling master dataframe...")
     master = _merge_left_all(
@@ -343,6 +360,7 @@ def download_dataset(dataset_key, force_refresh=False):
         mrna_mol, mrna_ar_activity, mrna, sv,
         cna_androgen, mut_androgen_wide,
         cna_adhesion, mut_adhesion_wide,
+        mrna_crowding,
     )
 
     # Mutation flag columns: 0-fill ONLY for patients confirmed to be in the
