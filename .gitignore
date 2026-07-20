@@ -136,6 +136,6 @@ KEY_OBSERVATIONS.md
 # Crowding Fig 12 panel builders (local, not part of pipeline)
 scripts/assemble_crowding_panel.py
 scripts/build_crowding_panel.py
-
+scripts/build_crowding_6axes_km.py
 #output directories
 *.sh

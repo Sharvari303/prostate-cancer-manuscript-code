@@ -96,8 +96,7 @@ python run_all.py --only module7
 | Min patients per KM arm | 20 |
 | Min events for Cox | 10 |
 | Significance threshold | p < 0.05 |
-| Crowding axes FDR (Axis 6) | Benjamini-Hochberg, q < 0.10 |
-| PTEN stratifier (crowding) | Deep deletion, CNA == −2 (`PTEN_DEEPDEL`) |
+| PTEN stratifier (for crowding axes) | Deep deletion, CNA == −2 (`PTEN_DEEPDEL`) |
 
 ---
 
@@ -132,4 +131,5 @@ km_analysis/
 │       └── crowding_cox_interaction.csv  # Crowding gene × PTEN_DEEPDEL interaction
 └── logs/                            # Pipeline logs
 ```
+data/, outputs/, logs/ generated during runs.
 *Generated with assistance from Claude AI coding agent.*
