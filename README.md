@@ -21,7 +21,7 @@ Kaplan-Meier and Cox Proportional Hazards survival analysis across prostate canc
 
 **Genes:** CDH1, EPCAM, VIM, CDH2, MMP9, CXCL8, SNAI1, RHOA, ITGB1, FN1
 
-### Axis 3: Crowding / Mechanobiology (clinical anchor for Fig 5 crowding result)
+### Axis 3: Crowding / Mechanobiology (clinical anchor for crowding result)
 **Cohort:** TCGA-PRAD (primary PCa)
 
 **Genes (6 sub-axes):** Hippo/YAP (YAP1, WWTR1, LATS1, LATS2); mechanosensitive ion channels (PIEZO1, TRPV4); phosphoinositide kinases (PIP4K2B, PIP5K1C, PIK3CA); cell cycle (CDKN1A, CDKN1B, CCND1, MKI67); hypoxia (HIF1A, EPAS1, VEGFA); PIP2 / cytoskeletal (ANXA1, KPNA4, RAE1, PLS1, ZYX, ARF1, CDC42, EZR, LAMP2, HMOX1, FLNC) — plus a PIP2 composite score (mean z of ANXA1, ARF1, CDC42, EZR, VAMP3)
@@ -84,19 +84,6 @@ Run one module only:
 ```bash
 python run_all.py --only module7
 ```
-
----
-
-## Key Thresholds
-
-| Parameter | Value |
-|-----------|-------|
-| CNA threshold (strict) | Suppressor ≤ −2 (homozygous del), Oncogene ≥ +2 (amplification) |
-| mRNA z-score cutoff | z > 1.0 (ZSCORE split) |
-| Min patients per KM arm | 20 |
-| Min events for Cox | 10 |
-| Significance threshold | p < 0.05 |
-| PTEN stratifier (for crowding axes) | Deep deletion, CNA == −2 (`PTEN_DEEPDEL`) |
 
 ---
 
