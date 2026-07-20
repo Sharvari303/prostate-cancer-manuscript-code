@@ -46,11 +46,10 @@ Growth rates, apoptosis rates, and testosterone sensitivity (Michaelis-Menten pa
 
 ## How to Reproduce a Simulation
 
-### 1. Get PhysiCell v1.14.0
+### 1. Get PhysiCell (version >= v1.14.0)
 ```bash
 git clone https://github.com/MathCancer/PhysiCell.git
 cd PhysiCell
-git checkout v1.14.0
 ```
 
 ### 2. Copy files from this repo into your PhysiCell directory
