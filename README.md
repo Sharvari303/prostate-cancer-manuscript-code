@@ -132,4 +132,5 @@ km_analysis/
 └── logs/                            # Pipeline logs
 ```
 data/, outputs/, logs/ generated during runs.
+
 *Generated with assistance from Claude AI coding agent.*
