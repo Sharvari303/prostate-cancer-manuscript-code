@@ -109,8 +109,10 @@ ABM_densepacking/                         # Spatially confined simulation files
     PhysiCell_standard_models.cpp         # double boundary = 125
 
 runs/
-  ABMruns_masterlist_prostatecancer.csv   # Full parameter table for all runs
+  ABMruns_masterlist_prostatecancer.csv   # Full parameter table for crowding runs
+  ABMruns_masterlist_prostatecancer_v2.csv   # Full parameter table for adhesion-motility, androgen-uptake runs
   ABMruns_updatexml.py                    # Updates PhysiCell XML config for a given Run_ID
+  README.md #csv descriptions
 
 analysis/
   ABMruns_PCa_dataanalysis.py             # Main data analysis script
