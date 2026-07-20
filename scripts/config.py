@@ -2,26 +2,7 @@
 config.py — Single source of truth for the PCa survival analysis pipeline.
 
 All gene lists, cohort IDs, endpoints, thresholds, colors, and paths are
-defined here. No other module should hardcode any of these values.
-
-Biological axes (derived from SHAP analysis on PhysiCell ABM surrogate):
-  Molecular axis   — PTEN, MDM2, MDM4, AR, CDKN1A, BAX, ATM
-                     Alteration = CNA (GISTIC) + somatic mutation + SV
-                     7 cohorts combined, OS endpoint
-
-  Androgen axis    — SLCO2B1, SLCO1B3, AKR1C3
-                     mRNA z-scores, per cohort independently
-
-  Adhesion/motility axis — CDH1, EPCAM (epithelial, low is bad)
-                           VIM, CDH2, MMP9, CXCL8, SNAI1, RHOA, ITGB1, FN1 (mesenchymal, high is bad)
-                           mRNA z-scores, per cohort independently
-
-Cohort pools:
-  Molecular (7 cohorts, OS): TCGA_PRAD, SU2C, MCTP, MSK_2025, PIK3R1_MSK, MSK_2024, MCSPC_MSK
-    MSKCC excluded (no OS); IDH_MUTANT excluded (biologically atypical)
-  Expression (4 cohorts, per-cohort): TCGA_PRAD, SU2C, MSKCC, MCTP
-    Endpoint: DFS for TCGA_PRAD and MSKCC; OS for SU2C and MCTP
-    z-scores are never pooled across cohorts (different normalization baselines)
+defined here. No other module hardcodes any of these values.
 """
 
 from pathlib import Path
@@ -90,7 +71,7 @@ MRNA_PROFILE_OVERRIDES = {
 
 DATASETS = {
     # ===== mRNA COHORTS — have both expression z-scores and survival =====
-    # Analyzed per-cohort independently for expression axes (never pooled).
+    # Analyzed per-cohort independently for expression axes.
     # OS events are low in TCGA/MSKCC primary disease → use DFS as primary for those.
     "TCGA_PRAD": {
         "study_id":          "prad_tcga_pan_can_atlas_2018",
@@ -98,7 +79,6 @@ DATASETS = {
         "stage":             "Primary",
         "n_expected":        494,
         "has_mrna":          True,
-        # OS: 10/494 events (2%) — too few for OS KM; DFS: 30/494 (6%) — use as primary
         "primary_endpoint":  "DFS",
         "in_molecular_pool": True,
     },
@@ -108,7 +88,6 @@ DATASETS = {
         "stage":             "Metastatic CRPC",
         "n_expected":        444,
         "has_mrna":          True,
-        # OS: 76/128 events (59%) — good OS data
         "primary_endpoint":  "OS",
         "in_molecular_pool": True,
     },
@@ -118,7 +97,6 @@ DATASETS = {
         "stage":             "Primary + Metastatic",
         "n_expected":        198,
         "has_mrna":          True,
-        # OS: 0 events — DFS only; excluded from molecular cohort pool
         "primary_endpoint":  "DFS",
         "in_molecular_pool": False,   # no OS data — excluded from combined molecular KM
     },
@@ -169,15 +147,13 @@ DATASETS = {
         "primary_endpoint":  "OS",
         "in_molecular_pool": True,
     },
-    # ===== EXCLUDED FROM MOLECULAR POOL — kept for reference/separate analyses =====
+    # ===== EXCLUDED FROM MOLECULAR POOL — a speciifc mutant subtype and small cohort =====
     "IDH_MUTANT": {
         "study_id":          "prad_idhmut_msk_2025",
         "label":             "IDH Mutant MSK 2024",
         "stage":             "IDH-mutant",
         "n_expected":        99,
         "has_mrna":          False,
-        # Excluded: IDH-mutant PCa is a biologically distinct rare subtype;
-        # pooling with general PCa would confound PTEN/MDM2/MDM4/AR alteration rates
         "primary_endpoint":  "OS",
         "in_molecular_pool": False,
     },
@@ -192,11 +168,9 @@ COMBINED_MOLECULAR_LABEL = "7-Cohort Molecular Pool (OS endpoint)"
 # ─────────────────────────────────────────────────────────────────────────────
 
 # 7-cohort molecular OS pool: all have CNA+mut data and OS endpoint
-# Excludes: MSKCC (no OS), IDH_MUTANT (biologically atypical rare subtype)
 MOLECULAR_COHORT_KEYS = [k for k, v in DATASETS.items() if v["in_molecular_pool"]]
 
-# mRNA cohorts: analyzed independently per cohort, never pooled across studies.
-# z-scores are normalized within each cohort — cross-study pooling is invalid.
+# mRNA cohorts: analyzed independently per cohort.
 # TCGA/MSKCC use DFS as primary (insufficient OS events); SU2C/MCTP use OS.
 EXPRESSION_COHORT_KEYS = ["TCGA_PRAD", "SU2C", "MSKCC", "MCTP"]
 
@@ -298,7 +272,6 @@ ENDPOINTS = {
 # Raw string values from cBioPortal that map to event = 1
 EVENT_POSITIVE_STRINGS = {
     # MCSPC_MSK uses SURVIVAL_STATUS → renamed to OS_STATUS; its values are
-    # plain "Dead" / "Alive" (no "0:"/"1:" prefix), so both must be listed here
     "OS_STATUS":      ["1:DECEASED", "DECEASED", "Dead", "DEAD"],
     "DFS_STATUS":     ["1:Recurred/Progressed", "1:RECURRENCE",
                        "Recurred", "Progressed"],
@@ -306,8 +279,6 @@ EVENT_POSITIVE_STRINGS = {
 }
 
 EVENT_NEGATIVE_STRINGS = {
-    # Explicit censored values — anything listed here maps to 0 instead of NaN.
-    # Critical for MCSPC_MSK whose SURVIVAL_STATUS uses "Alive" (no "0:" prefix).
     "OS_STATUS":  ["0:LIVING", "LIVING", "Alive", "ALIVE"],
     "DFS_STATUS": ["0:DiseaseFree", "DiseaseFree"],
     "PFS_STATUS": ["0:CENSORED",   "CENSORED"],
@@ -368,7 +339,7 @@ ENTREZ_IDS = {
     "PIP4K2B": 8396,
     "PIP5K1C":23396,
     "PIK3CA":  5290,
-    # Axis 4 — cell cycle (CDKN1A 1026 already defined above — reused, not re-added)
+    # Axis 4 — cell cycle (CDKN1A 1026 already defined above)
     "CDKN1B":  1027,   # p27
     "CCND1":    595,   # Cyclin D1
     "MKI67":   4288,   # Ki-67
@@ -388,7 +359,7 @@ ENTREZ_IDS = {
     "LAMP2":   3920,
     "HMOX1":   3162,
     "FLNC":    2318,
-    "VAMP3":   9341,   # in PIP2 composite formula (not in brief per-gene table)
+    "VAMP3":   9341,  
 }
 
 
@@ -406,7 +377,6 @@ MOLECULAR_GENES = {
         "alteration_type": "suppressor",
         "mechanism":      "PI3K_AKT_dysregulation",
         "direction":      "loss_is_bad",
-        "shap_rank":      "Top 3 all models",
         "note":           "Primary SA variable in cellular model",
         "confidence":     "very_high",
         # ─── DATA SOURCES: Explicit hierarchy ───
@@ -440,7 +410,6 @@ MOLECULAR_GENES = {
         "alteration_type": "oncogene",
         "mechanism":      "p53_suppression",
         "direction":      "gain_is_bad",
-        "shap_rank":      "Top 5 RF and SVM models",
         "note":           "Co-alteration with PTEN drives double-hit p53/AKT",
         "confidence":     "high",
         # ─── DATA SOURCES: Explicit hierarchy ───
@@ -469,7 +438,6 @@ MOLECULAR_GENES = {
         "alteration_type": "oncogene",
         "mechanism":      "p53_transcription_inhibition",
         "direction":      "gain_is_bad",
-        "shap_rank":      "#1 in NN model",
         "note":           "Top SHAP feature — borderline KM expected "
                           "in primary disease, stronger in CRPC",
         "confidence":     "high",
@@ -499,7 +467,6 @@ MOLECULAR_GENES = {
         "alteration_type": "oncogene",
         "mechanism":      "androgen_independent_activation",
         "direction":      "gain_is_bad",
-        "shap_rank":      "Top 3 all models",
         "note":           "Rare in primary TCGA (~1% CNA), ~42-52% in CRPC. "
                           "CNA amplification is the dominant and unambiguous mechanism. "
                           "Mutations excluded: protein-change data not stored in master; "
@@ -522,7 +489,6 @@ MOLECULAR_GENES = {
         "alteration_type": "oncogene",
         "mechanism":      "apoptosis_suppression",
         "direction":      "gain_is_bad",
-        "shap_rank":      "Apoptosis axis",
         "note":           "Anti-apoptotic; overexpression blocks intrinsic apoptosis",
         "confidence":     "high",
         "data_sources": {
@@ -543,7 +509,6 @@ MOLECULAR_GENES = {
         "alteration_type": "oncogene",
         "mechanism":      "MAPK_pathway_activation",
         "direction":      "gain_is_bad",
-        "shap_rank":      "MAPK/ERK axis",
         "note":           "RAF1 amplification activates MAPK/ERK proliferation signaling",
         "confidence":     "high",
         "data_sources": {
@@ -564,7 +529,6 @@ MOLECULAR_GENES = {
         "alteration_type": "suppressor",
         "mechanism":      "intrinsic_apoptosis_initiation",
         "direction":      "loss_is_bad",
-        "shap_rank":      "Apoptosis axis",
         "note":           "Initiator caspase; loss blocks mitochondrial apoptosis pathway",
         "confidence":     "high",
         "data_sources": {
@@ -585,7 +549,6 @@ MOLECULAR_GENES = {
         "alteration_type": "oncogene",
         "mechanism":      "PI3K_AKT_survival_signaling",
         "direction":      "gain_is_bad",
-        "shap_rank":      "PI3K/AKT axis",
         "note":           "Downstream of PTEN; AKT1 amplification/mutation drives survival and proliferation",
         "confidence":     "high",
         "data_sources": {
@@ -608,11 +571,8 @@ MOLECULAR_GENES = {
 # AR ACTIVITY AXIS (NEW)
 # Measures functional androgen receptor signaling (independent of AR alterations)
 # Data: mRNA z-scores of AR target genes
-# Maps to: AR activation / proliferation rate SA in PhysiCell ABM
 # ─────────────────────────────────────────────────────────────────────────────
-# CRITICAL: Many CRPC tumors have WT AR + very high AR activity
-# AR alterations (CNA/mutation) ≠ AR activity (transcriptional output)
-# Literature: Cato et al., Takeda et al. show AR activity > AR status in CRPC
+
 
 AR_ACTIVITY_GENES = {
     "KLK3": {  # Prostate-specific antigen (PSA)
@@ -726,8 +686,6 @@ ADHESION_MOTILITY_GENES = {
         "sub_group": "mesenchymal",
         "note":      "IL-8; pro-invasive chemokine; promotes angiogenesis and invasion",
     },
-    # ACTB removed — housekeeping gene; constitutively expressed; z-score near 0
-    # in all samples; not a selective motility marker.
     "SNAI1": {
         "data_type": "mRNA_expression",
         "direction": "high_is_bad",
@@ -755,7 +713,6 @@ ADHESION_MOTILITY_GENES = {
 }
 
 # Sub-group lists for adhesion/motility axis (mRNA)
-# ACTB removed (housekeeping gene); SNAI1 added (canonical EMT driver)
 ADHESION_EPITHELIAL_GENES   = ["CDH1", "EPCAM"]
 ADHESION_MESENCHYMAL_GENES  = ["VIM", "CDH2", "MMP9", "CXCL8", "SNAI1", "RHOA", "ITGB1", "FN1"]
 
@@ -817,24 +774,18 @@ ALL_CNA_GENES = (list(MOLECULAR_GENES.keys()) + ALL_INDIVIDUAL_GENES +
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CROWDING / MECHANOBIOLOGY AXES (Axes 1–6)
-# Clinical anchor for the Fig 5 crowding result (PTEN-deleted clones proliferate
-# under physical crowding). Source: PI brief PCa_Crowding_6Axes_KM_Brief.pdf,
-# built from Nukpezah lab thesis Ch.3 (2025, "Nukpezah et al., in preparation").
+# Clinical anchor for the crowding result. 
 #
-# DESIGN (decided 2026-06-14):
-#   - ALL six axes are mRNA EXPRESSION (RNA-seq z-scores), NOT DNA/genetic calls.
-#     They route through module5_flag_expression, never module4.
+# DESIGN :
+#   - ALL six axes are mRNA EXPRESSION (RNA-seq z-scores)
+#     They route through module5_flag_expression
 #   - The ONLY DNA variable is the PTEN stratifier: deep deletion (CNA == -2),
 #     column PTEN_DEEPDEL (NOT PTEN_ALT_STRICT, which folds in mutation/SV).
-#   - Cohort: TCGA-PRAD only. Endpoints: DFS primary + PFS secondary, NO OS
-#     (TCGA-PRAD has ~10/494 OS events = 2%, effectively event-free).
-#   - Stratified evidence = Cox gene_z * PTEN_DEEPDEL interaction term (all ~490
-#     pts); PTEN-stratified KM curves are descriptive only (flag arms < 20).
+#   - Cohort: TCGA-PRAD only. Endpoints: DFS primary + PFS secondary.
+#   - Stratified evidence = Cox gene_z * PTEN_DEEPDEL interaction term; PTEN-stratified KM curves are descriptive only (flag arms < 20).
 #   - Dual-data genes CDKN1A/AR: crowding uses mRNA ONLY; their existing CNA
 #     analyses are untouched and coexist as distinct columns.
 #   - Splits: median default; quartile only for ANXA1 and the PIP2 composite.
-#   - FDR: Benjamini-Hochberg across Axis 6 genes, q < 0.10 (exploratory).
-#
 # direction:  high_is_bad | low_is_bad
 # pten_stratify: whether to fit the gene * PTEN_DEEPDEL interaction
 # ─────────────────────────────────────────────────────────────────────────────

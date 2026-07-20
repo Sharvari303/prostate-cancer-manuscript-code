@@ -1,9 +1,10 @@
 """
 module2_download.py — Downloads all data from cBioPortal for each cohort.
 
-For each cohort, fetches 13 data types and left-merges everything onto
-clinical data (clinical is the anchor — patients without survival data
-are excluded). Results saved as one master CSV per cohort.
+For each cohort, fetches five data types (clinical, CNA, mutation, mRNA
+z-scores, structural variants) across 14 fetch steps (multiple gene panels
+per type) and left-merges everything onto clinical data (patients without
+survival data are excluded). Results saved as one master CSV per cohort.
 
 Data fetched per cohort:
   Clinical          survival endpoints (OS, DFS)
@@ -151,12 +152,12 @@ def download_dataset(dataset_key, force_refresh=False):
              f"({info['allSampleCount']} samples)")
 
     # Step 1: Clinical
-    log.info("Step 1/13 — Clinical data")
+    log.info("Step 1/14 — Clinical data")
     clinical = fetch_clinical_data(study_id, force_refresh)
     clinical["DATASET"] = label
 
     # Step 2: CNA (optional — some cohorts lack CNA data)
-    log.info("Step 2/13 — CNA data (molecular axis)")
+    log.info("Step 2/14 — CNA data (molecular axis)")
     try:
         cna = fetch_cna_data(
             study_id,
@@ -170,7 +171,7 @@ def download_dataset(dataset_key, force_refresh=False):
         cna = pd.DataFrame(columns=["patientId"])
 
     # Step 3: Mutations (optional — some cohorts may have limited mutations)
-    log.info("Step 3/13 — Mutation data (molecular axis)")
+    log.info("Step 3/14 — Mutation data (molecular axis)")
     try:
         mut_raw, mol_profiled_patients = fetch_mutation_data(
             study_id,
@@ -188,7 +189,7 @@ def download_dataset(dataset_key, force_refresh=False):
         mol_profiled_patients = set()
 
     # Step 4: CNA data for individual genes (CDKN1A, BAX, ATM)
-    log.info("Step 4/13 — CNA data (individual genes: CDKN1A, BAX, ATM)")
+    log.info("Step 4/14 — CNA data (individual genes: CDKN1A, BAX, ATM)")
     try:
         cna_indiv = fetch_cna_data(
             study_id,
@@ -202,7 +203,7 @@ def download_dataset(dataset_key, force_refresh=False):
         cna_indiv = pd.DataFrame(columns=["patientId"])
 
     # Step 5: Mutations for individual genes (CDKN1A, BAX, ATM)
-    log.info("Step 5/13 — Mutation data (individual genes: CDKN1A, BAX, ATM)")
+    log.info("Step 5/14 — Mutation data (individual genes: CDKN1A, BAX, ATM)")
     try:
         mut_indiv_raw, indiv_profiled_patients = fetch_mutation_data(
             study_id,
@@ -220,7 +221,7 @@ def download_dataset(dataset_key, force_refresh=False):
         indiv_profiled_patients = set()
 
     # Step 6: mRNA z-scores for molecular axis genes
-    log.info("Step 6/13 — mRNA z-scores (molecular axis genes)")
+    log.info("Step 6/14 — mRNA z-scores (molecular axis genes)")
     try:
         mrna_mol = fetch_mrna_data(
             study_id,
@@ -234,7 +235,7 @@ def download_dataset(dataset_key, force_refresh=False):
         mrna_mol = pd.DataFrame(columns=["patientId"])
 
     # Step 7: mRNA z-scores for AR activity genes
-    log.info("Step 7/13 — mRNA z-scores (AR activity: KLK3, TMPRSS2, NKX3.1)")
+    log.info("Step 7/14 — mRNA z-scores (AR activity: KLK3, TMPRSS2, NKX3.1)")
     try:
         mrna_ar_activity = fetch_mrna_data(
             study_id,
@@ -248,7 +249,7 @@ def download_dataset(dataset_key, force_refresh=False):
         mrna_ar_activity = pd.DataFrame(columns=["patientId"])
 
     # Step 8: mRNA expression (androgen uptake + adhesion-motility axis)
-    log.info("Step 8/13 — mRNA expression (androgen uptake + adhesion-motility: 14 genes)")
+    log.info("Step 8/14 — mRNA expression (androgen uptake + adhesion-motility: 14 genes)")
     try:
         mrna = fetch_mrna_data(
             study_id,
@@ -261,7 +262,7 @@ def download_dataset(dataset_key, force_refresh=False):
         mrna = pd.DataFrame(columns=["patientId"])
 
     # Step 9: Structural variants
-    log.info("Step 9/13 — Structural variants (molecular axis genes)")
+    log.info("Step 9/14 — Structural variants (molecular axis genes)")
     try:
         sv = fetch_sv_data(
             study_id,
@@ -274,7 +275,7 @@ def download_dataset(dataset_key, force_refresh=False):
         sv = pd.DataFrame(columns=["patientId"])
 
     # Step 10: CNA data for androgen CNA genes (SLCO2B1, SLCO1B3, AKR1C3)
-    log.info("Step 10/13 — CNA data (androgen CNA genes: SLCO2B1, SLCO1B3, AKR1C3)")
+    log.info("Step 10/14 — CNA data (androgen CNA genes: SLCO2B1, SLCO1B3, AKR1C3)")
     try:
         cna_androgen = fetch_cna_data(
             study_id,
@@ -288,7 +289,7 @@ def download_dataset(dataset_key, force_refresh=False):
         cna_androgen = pd.DataFrame(columns=["patientId"])
 
     # Step 11: Mutations for androgen CNA genes
-    log.info("Step 11/13 — Mutation data (androgen CNA genes)")
+    log.info("Step 11/14 — Mutation data (androgen CNA genes)")
     try:
         mut_androgen_raw, androgen_profiled_patients = fetch_mutation_data(
             study_id,
@@ -306,7 +307,7 @@ def download_dataset(dataset_key, force_refresh=False):
         androgen_profiled_patients = set()
 
     # Step 12: CNA data for adhesion/motility CNA genes
-    log.info("Step 12/13 — CNA data (adhesion/motility CNA genes)")
+    log.info("Step 12/14 — CNA data (adhesion/motility CNA genes)")
     try:
         cna_adhesion = fetch_cna_data(
             study_id,
@@ -320,7 +321,7 @@ def download_dataset(dataset_key, force_refresh=False):
         cna_adhesion = pd.DataFrame(columns=["patientId"])
 
     # Step 13: Mutations for adhesion/motility CNA genes
-    log.info("Step 13/13 — Mutation data (adhesion/motility CNA genes)")
+    log.info("Step 13/14 — Mutation data (adhesion/motility CNA genes)")
     try:
         mut_adhesion_raw, adhesion_profiled_patients = fetch_mutation_data(
             study_id,

@@ -6,9 +6,7 @@ Core Kaplan-Meier engine — backed by lifelines for all statistical computation
 Provides:
   - KaplanMeierCurve   : thin wrapper around lifelines.KaplanMeierFitter
   - logrank_test        : two-group log-rank test (lifelines)
-  - multivariate_logrank: k-group log-rank test (lifelines)
   - plot_two_group_km   : plots two KM curves on matplotlib axes
-  - plot_multigroup_km  : plots multiple KM curves
   - save_figure         : saves figure in all configured formats
 ─────────────────────────────────────────────────────────────────────────────
 """
@@ -25,7 +23,6 @@ import matplotlib.ticker as mticker
 
 from lifelines import KaplanMeierFitter
 from lifelines.statistics import logrank_test as _ll_logrank
-from lifelines.statistics import multivariate_logrank_test as _ll_multivariate_logrank
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from config import STATS, PLOT_STYLE, COLORS, FIGURES_DIR
@@ -81,21 +78,13 @@ class KaplanMeierCurve:
             )
         self._kmf = kmf
 
-        # Expose arrays in the same shape as before for plot()
+        # Expose arrays in the shape expected by plot()
         self.timeline = np.concatenate([[0.0], kmf.survival_function_.index.values])
         self.survival = np.concatenate([[1.0], kmf.survival_function_.values.flatten()])
         self.ci_lower = np.concatenate([[1.0], kmf.confidence_interval_.iloc[:, 0].values])
         self.ci_upper = np.concatenate([[1.0], kmf.confidence_interval_.iloc[:, 1].values])
 
         self.median_survival  = float(kmf.median_survival_time_)
-        # Brookmeyer-Crowley CI for median via lifelines percentile method
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            try:
-                self.median_ci_lower = float(kmf.percentile(0.5,
-                    interpolation="midpoint"))
-            except Exception:
-                self.median_ci_lower = np.nan
         # lifelines does not expose median CI bounds directly;
         # approximate via the CI curve crossing 0.5 (same as Brookmeyer-Crowley)
         ci_lo_arr = self.ci_lower
@@ -141,43 +130,9 @@ def logrank_test(times_a, events_a, times_b, events_b):
         return None
 
 
-def multivariate_logrank_test(df, group_col, time_col, event_col):
-    """
-    K-sample log-rank test via lifelines.
-    Returns overall p-value or None.
-    """
-    groups = df[group_col].dropna().unique()
-    if len(groups) < 2:
-        return None
-
-    valid = df[[group_col, time_col, event_col]].dropna()
-    valid = valid[valid[time_col] > 0]
-
-    if len(valid) < 10:
-        return None
-
-    try:
-        result = _ll_multivariate_logrank(
-            valid[time_col], valid[group_col], valid[event_col]
-        )
-        return float(result.p_value)
-    except Exception as exc:
-        log.debug(f"multivariate_logrank_test failed: {exc}")
-        return None
-
-
 # ─────────────────────────────────────────────────────────────────────────────
 # VALIDATION
 # ─────────────────────────────────────────────────────────────────────────────
-
-def check_group_size(df, label="group"):
-    n     = len(df) if hasattr(df, '__len__') else 0
-    min_n = STATS["min_group_size"]
-    if n < min_n:
-        log.warning(f"  {label}: n={n} is below minimum ({min_n}). "
-                    f"KM curve may be unreliable.")
-    return n >= min_n
-
 
 def validate_and_clean(df, time_col, event_col, label=""):
     """
@@ -242,43 +197,6 @@ def annotate_pvalue(ax, pval, x=0.05, y=0.08):
             bbox=dict(boxstyle="round,pad=0.3",
                       facecolor="white", alpha=0.85,
                       edgecolor=color, linewidth=0.8))
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# AT-RISK TABLE
-# ─────────────────────────────────────────────────────────────────────────────
-
-def add_at_risk_table(ax, curves_and_dfs, time_col, colors, time_points=None):
-    """
-    Adds a simple at-risk count row below the KM plot.
-    curves_and_dfs : list of (KaplanMeierCurve, DataFrame, time_col, event_col, color)
-    """
-    if time_points is None:
-        all_times = []
-        for _, df, tc, _ in curves_and_dfs:
-            if tc in df.columns:
-                all_times.extend(df[tc].dropna().values)
-        if not all_times:
-            return
-        max_t       = np.percentile(all_times, 95)
-        time_points = np.linspace(0, max_t, 6).astype(int)
-
-    y_base = -0.22
-    ax.text(-0.02, y_base, "At risk:",
-            transform=ax.transAxes, fontsize=7, ha="right", va="center")
-
-    for row_idx, (curve, df, tc, ec, color) in enumerate(curves_and_dfs):
-        y   = y_base - row_idx * 0.07
-        lbl = curve.label.split("(")[0].strip() if curve else ""
-        ax.text(-0.02, y, lbl, transform=ax.transAxes,
-                fontsize=6, ha="right", va="center", color=color)
-        if tc in df.columns:
-            t_arr = pd.to_numeric(df[tc], errors="coerce").values
-            for t in time_points:
-                n = int(np.sum(t_arr >= t))
-                ax.text(t / ax.get_xlim()[1] if ax.get_xlim()[1] > 0 else 0.5,
-                        y, str(n), transform=ax.transAxes,
-                        fontsize=6, ha="center", va="center", color=color)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -350,30 +268,6 @@ def plot_two_group_km(ax, df_high, df_low,
     return km_high, km_low
 
 
-def plot_multigroup_km(ax, group_dfs, time_col, event_col,
-                       colors, title="", pval=None,
-                       show_at_risk=False,
-                       ylabel="Survival Probability"):
-    """
-    Plots multiple KM curves on one axes.
-    group_dfs : list of (label, DataFrame) tuples
-    """
-    lw       = PLOT_STYLE["linewidth"]
-    ci_alpha = PLOT_STYLE["ci_alpha"]
-    curves   = []
-
-    for (label, df), color in zip(group_dfs, colors):
-        n  = len(df.dropna(subset=[time_col, event_col]))
-        km = fit_km(df, time_col, event_col, label=f"{label} (n={n})")
-        if km:
-            km.plot(ax, color=color, linewidth=lw, ci_alpha=ci_alpha)
-            curves.append(km)
-
-    annotate_pvalue(ax, pval)
-    _style_axes(ax, title, "Time (Months)", ylabel)
-    return curves
-
-
 # ─────────────────────────────────────────────────────────────────────────────
 # FIGURE SAVING
 # ─────────────────────────────────────────────────────────────────────────────
@@ -392,22 +286,3 @@ def save_figure(fig, filename_stem, subdir):
             log.error(f"  Failed to save {out_path.name}: {e}")
 
     plt.close(fig)
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# ALIASES
-# ─────────────────────────────────────────────────────────────────────────────
-
-def run_logrank(df_a, df_b, time_col, event_col):
-    clean_a, ok_a = validate_and_clean(df_a, time_col, event_col, "group_a")
-    clean_b, ok_b = validate_and_clean(df_b, time_col, event_col, "group_b")
-    if not ok_a or not ok_b:
-        return None
-    return logrank_test(
-        clean_a[time_col].values, clean_a[event_col].values,
-        clean_b[time_col].values, clean_b[event_col].values,
-    )
-
-
-def run_multivariate_logrank(df, group_col, time_col, event_col):
-    return multivariate_logrank_test(df, group_col, time_col, event_col)

@@ -117,7 +117,6 @@ km_analysis/
 │   └── utils/
 │       ├── km_engine.py             # KaplanMeierCurve class, log-rank test, plotting
 │       ├── api_client.py            # cBioPortal API wrappers
-│       ├── axes.py                  # Composite score helpers
 │       └── logger.py                # Logging setup
 ├── data/
 │   └── cache/                       # Intermediate CSVs

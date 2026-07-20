@@ -1,14 +1,13 @@
 """
 module7_cox_regression.py — Univariate + Multivariate Cox regression for all tasks.
 
-Mirrors the 7 KM tasks in module6. Reads from module4 + module5 flagged CSVs.
 Min events per model: 10.
 
-Molecular pool analyses (tasks 1, 2, 3b, 6b):
+Molecular pool analyses:
   7 cohorts combined, OS endpoint
   Covariates: COHORT_CODE (integer) + AGE (where available)
 
-Per-cohort mRNA analyses (tasks 3, 4, 6, 7):
+Per-cohort mRNA analyses:
   4 mRNA cohorts, cohort-specific endpoint (OS or DFS per config.ENDPOINTS)
   Covariates: AGE (where available); no cohort term (single cohort)
   Runs both continuous z-score Cox and binary-per-split Cox.

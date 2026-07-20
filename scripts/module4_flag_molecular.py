@@ -10,7 +10,7 @@ Thresholds (strict, used throughout):
   Suppressor mutation     truncating only (frameshift, nonsense, splice)
   AR                      CNA amplification only (mutations excluded)
 
-Missing data rule: no data from any source → NaN, never wildtype.
+Missing data rule: no data from any source → ignore from analysis.
 Wildtype (0) requires data present AND no alteration detected.
 
 Output: data/cache/{KEY}_flagged_molecular.csv  (one per cohort)
@@ -57,7 +57,7 @@ def _flag_single_gene(df, gene, alteration_type, threshold_key="strict",
     """
     Returns NaN-safe alteration flag for one gene.
     alteration_type: "suppressor" or "oncogene"
-    NaN = no data from any source → excluded from analysis (never assigned wildtype).
+    NaN = no data from any source → excluded from analysis.
     """
     thresholds = CNA_THRESHOLDS[threshold_key]
     cna_col    = f"{gene}_CNA"
@@ -217,9 +217,8 @@ def add_pten_deepdel(df):
     PTEN_DEEPDEL = 1 if PTEN_CNA == -2 (homozygous/deep deletion), 0 if PTEN_CNA
     is present and > -2, NaN if no CNA data. This is DELETION-ONLY by design and
     is intentionally NARROWER than PTEN_ALT_STRICT (which also folds in truncating
-    mutations and SV). It exists solely as the gene * PTEN interaction stratifier
-    for the mRNA crowding analysis, matching the PI brief ("copy number -2 = deep
-    deletion"). It does NOT replace or modify PTEN_ALT_STRICT.
+    mutations and SV): copy number -2 denotes deep deletion. It exists solely as
+    the gene * PTEN interaction stratifier for the mRNA crowding analysis.
     """
     cna_col = "PTEN_CNA"
     if cna_col not in df.columns:

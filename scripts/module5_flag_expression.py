@@ -45,9 +45,9 @@ SPLIT_NAMES = ["MEDIAN", "QUARTILE", "ZSCORE"]
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# NaN-SAFE SPLITTING
+# SPLITTING
 # Returns a Series with values "High", "Low", or NaN.
-# Patients with missing z-score always get NaN — never assigned to a group.
+# Patients with missing z-score always get NaN.
 # For quartile split: middle 50% patients also get NaN (excluded from KM).
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -111,7 +111,7 @@ def add_expression_splits(df):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# OR-COMBINED FLAGS (NaN-safe)
+# OR-COMBINED FLAGS
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _or_combined(df, genes, split_name, bad_value):
@@ -263,7 +263,7 @@ def flag_all(molecular_dfs=None, force_refresh=False):
                  f"(n={len(df)}, with mRNA={n_valid_mrna})\n{'='*55}")
 
         # PTEN_DEEPDEL (crowding stratifier) flows in from the molecular flagged frame.
-        # Warn loudly if absent — module4 must be re-run after adding it.
+        # Warn - module4 must be re-run after adding it. (module4_flag_molecular.py adds PTEN_DEEPDEL to the molecular flagged output.)
         if "PTEN_DEEPDEL" not in df.columns:
             log.warning("  PTEN_DEEPDEL missing — re-run module4_flag_molecular --refresh "
                         "for crowding (module8) PTEN-stratified analysis.")

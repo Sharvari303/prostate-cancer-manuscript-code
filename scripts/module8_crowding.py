@@ -1,17 +1,17 @@
 """
 module8_crowding.py — Kaplan-Meier + Cox analyses for the crowding /
-mechanobiology axes (Axes 1–6) anchoring the Fig 5 crowding result.
+mechanobiology axes (Axes 1–6) anchoring the crowding result.
 
-Scope (decided 2026-06-14, see config.CROWDING_AXES header):
+Scope (see config.CROWDING_AXES header):
   - mRNA EXPRESSION only (RNA-seq z-scores). PTEN is the ONLY DNA variable,
     used purely as the deep-deletion stratifier (PTEN_DEEPDEL, CNA == -2).
   - Cohort: TCGA-PRAD only. Endpoints: DFS primary + PFS secondary. NO OS
     (TCGA-PRAD is effectively OS-event-free: ~10/494 = 2%).
-  - Stratified evidence = Cox  gene_z * PTEN_DEEPDEL  interaction term (uses all
-    patients). PTEN-stratified KM curves are produced for figures but are
+  - Stratified evidence = Cox  gene_z * PTEN_DEEPDEL  interaction term. 
+    PTEN-stratified KM curves are produced for figures but are
     DESCRIPTIVE; arms below STATS.min_group_size are flagged, not trusted.
   - Splits: median default; quartile for ANXA1 and the PIP2 composite.
-  - FDR: Benjamini-Hochberg across Axis 6 gene p-values; q < 0.10 (exploratory).
+  - FDR: Benjamini-Hochberg across Axis 6 gene p-values; q < 0.10 (added - exploratory, but manuscript lists individual outcome values).
 
 Reads:  data/cache/TCGA_PRAD_flagged_expression.csv  (from module5; must contain
         {GENE}_ZSCORE, {GENE}_GROUP_*, PIP2_TRAFFICKING_*, PTEN_DEEPDEL)
@@ -296,7 +296,7 @@ def _km_pten_stratified(df, gene, cfg, endpoint):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# PIP2 COMPOSITE (headline)
+# PIP2 COMPOSITE
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _km_composite(df, endpoint, km_rows, inter_rows):
@@ -383,8 +383,7 @@ def _forest_plot(km_df, endpoint):
 # FDR CORRECTION (Benjamini-Hochberg, per test family)
 #
 # The crowding analysis is an exploratory screen, so every p-value is corrected
-# for multiple testing within a coherent test family (the q-value denominator =
-# number of tests in its family). Pooling unrelated families would over-penalise.
+# for multiple testing within a coherent test family.
 #   Family 1  KM, median split     : per-gene high-vs-low log-rank, all genes × {DFS,PFS}
 #   Family 2  KM, quartile split    : ANXA1 + PIP2 composite quartile KM × {DFS,PFS}
 #   Family 3  gene × PTEN interaction: Cox interaction term, all genes × {DFS,PFS}

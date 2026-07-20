@@ -1,7 +1,7 @@
 """
 run_all.py — Master pipeline runner.
 
-Runs all 6 modules in order. Each module reads cached outputs from the
+Runs all modules in order. Each module reads cached outputs from the
 previous step, so you can resume mid-pipeline with --start or run a
 single module with --only.
 

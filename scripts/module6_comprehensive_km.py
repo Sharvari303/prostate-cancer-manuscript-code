@@ -22,7 +22,6 @@ Tasks:
   6b: Individual adhesion/motility CNA genes, 7 cohorts combined (OS)
   7:  OR-combined adhesion/motility mRNA, per mRNA cohort × 3 splits
 
-Missing data rule: NaN → excluded (never assigned to wildtype).
 Min group size: 20 patients per KM arm.
 
 Output:
@@ -493,7 +492,7 @@ def run_task6(mrna_dfs, stats_rows, median_rows):
 
 # ─────────────────────────────────────────────────────────────────────────────
 # TASK 6b — Individual adhesion/motility CNA genes, 7 cohorts combined
-# 10 genes — CDH1/EPCAM: loss is bad; VIM/CDH2/MMP9/CXCL8/ACTB/RHOA/ITGB1/FN1: gain is bad
+# genes — CDH1/EPCAM: loss is bad; VIM/CDH2/MMP9/CXCL8/RHOA/ITGB1/FN1: gain is bad
 # ─────────────────────────────────────────────────────────────────────────────
 
 def run_task6b(mol_pool, stats_rows, median_rows):

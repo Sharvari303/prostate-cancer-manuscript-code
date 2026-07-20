@@ -28,5 +28,3 @@ urllib3>=2.0
 # Cox regression analysis
 lifelines>=0.27
 
-# Optional — progress bars
-# tqdm>=4.65
