@@ -1,9 +1,15 @@
 # Manuscript Code
 
-Code accompanying *<paper / preprint title>* (<link or DOI>).
+Code accompanying *Coupled Cell-Intrinsic and Microenvironmental Heterogeneity
+Drives Divergent Trajectories in Castration-Resistant Prostate Cancer*
+(doi: [10.64898/2026.07.16.738502](https://doi.org/10.64898/2026.07.16.738502)).
+
+Sharvari Kemkar, Mengdi Tao, Alokendra Ghosh, Adarsh Ramamurthy, Ravi Radhakrishnan.
+
+The manuscript is currently posted as a preprint on bioRxiv and is undergoing peer review.
 
 This repository consolidates all code for the manuscript. Each subfolder is a
-self-contained component with its full original commit history preserved.
+self-contained component.
 
 ## Contents
 
@@ -19,4 +25,7 @@ self-contained component with its full original commit history preserved.
 
 If you use this code, please cite:
 
-> <citation / BibTeX here>
+> Kemkar, S., Tao, M., Ghosh, A., Ramamurthy, A. & Radhakrishnan, R. Coupled
+> cell-intrinsic and microenvironmental heterogeneity drives divergent
+> trajectories in castration-resistant prostate cancer. *Preprint at bioRxiv*
+> https://doi.org/10.64898/2026.07.16.738502 (2026).
