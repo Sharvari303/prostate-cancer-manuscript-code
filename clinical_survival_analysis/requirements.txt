@@ -1,0 +1,30 @@
+# requirements.txt
+# ─────────────────────────────────────────────────────────────────────────────
+# Pip requirements for KM Survival Analysis Pipeline
+# Use this if conda is not available or as a fallback.
+#
+# To install into an existing Python environment:
+#   pip install -r requirements.txt
+#
+# To install into a fresh venv:
+#   python -m venv km_prostate_env
+#   source km_prostate_env/bin/activate       # Linux / macOS
+#   km_prostate_env\Scripts\activate.bat      # Windows
+#   pip install -r requirements.txt
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Core scientific stack
+numpy>=1.26
+scipy>=1.11
+pandas>=2.0
+
+# Plotting
+matplotlib>=3.7
+
+# HTTP / cBioPortal API
+requests>=2.31
+urllib3>=2.0
+
+# Cox regression analysis
+lifelines>=0.27
+
