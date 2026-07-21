@@ -1,0 +1,8 @@
+*.cps
+*.json
+*.*~
+*.pyc
+Output_Data/
+*.log
+Copasi_Executables/
+collected_csvs/
